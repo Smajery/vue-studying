@@ -3,104 +3,88 @@
     <div class="title-box">
       <h1>{{ CHART_TITLE }}</h1>
     </div>
-    <div ref="xYChart" class="chart"></div>
+    <div :id="CHART_ID" class="chart"></div>
   </section>
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount, computed, watch } from 'vue';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
 import * as am5 from '@amcharts/amcharts5';
 import * as am5xy from '@amcharts/amcharts5/xy';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
 import { useStore } from 'vuex';
 import { BANK_STATEMENT_STORE } from '@/utils/types/store.types.js';
 
+const CHART_ID = 'xYChart';
 const CHART_TITLE = `"Total Spent" Chart`;
-const CORRECT_CATEGORY = 'category';
-const CHART_NAME = 'Total Spent';
-const CHART_VALUE_Y_FIELD = 'total';
-const CHART_SET_TYPE = 'cursor';
-
-const xYChart = ref(null);
-let root = null;
+const SELECTED_CATEGORY = 'category';
+const X_AXIS_CATEGORY_FIELD = 'category';
+const SERIES_NAME = 'Total Spent';
+const SERIES_VALUE_Y_FIELD = 'total';
+const SERIES_CATEGORY_X_FIELD = 'category';
+const CHART_CURSOR_PROPERTY = 'cursor';
 
 const store = useStore();
 
-const categoriesWithTotal = computed(
-  () => store.getters[BANK_STATEMENT_STORE.CATEGORIES_WITH_TOTAL],
+const categoriesWithTotal = computed(() =>
+  store.getters[BANK_STATEMENT_STORE.CATEGORIES_WITH_TOTAL](SELECTED_CATEGORY),
 );
-const categoriesWithTotalValue = computed(() =>
-  categoriesWithTotal.value(CORRECT_CATEGORY),
+const chartData = computed(() =>
+  Object.entries(categoriesWithTotal.value).map(([category, total]) => ({
+    category,
+    total,
+  })),
 );
 
-const createChart = () => {
-  if (
-    !xYChart.value ||
-    Object.keys(categoriesWithTotalValue.value).length === 0
-  )
-    return;
+let root, chart, xAxis, series;
 
-  if (root) {
-    root.dispose();
-    root = null;
-  }
+onMounted(() => {
+  root = am5.Root.new(CHART_ID);
 
-  root = am5.Root.new(xYChart.value);
   root.setThemes([am5themes_Animated.new(root)]);
 
-  let chart = root.container.children.push(
+  chart = root.container.children.push(
     am5xy.XYChart.new(root, {
       panY: false,
       layout: root.verticalLayout,
     }),
   );
 
-  let data = Object.entries(categoriesWithTotalValue.value).map(
-    ([category, total]) => ({ category, total }),
-  );
-
   let yAxis = chart.yAxes.push(
-    am5xy.ValueAxis.new(root, { renderer: am5xy.AxisRendererY.new(root, {}) }),
-  );
-
-  let xAxis = chart.xAxes.push(
-    am5xy.CategoryAxis.new(root, {
-      categoryField: CORRECT_CATEGORY,
-      renderer: am5xy.AxisRendererX.new(root, {}),
+    am5xy.ValueAxis.new(root, {
+      renderer: am5xy.AxisRendererY.new(root, {}),
     }),
   );
+  xAxis = chart.xAxes.push(
+    am5xy.CategoryAxis.new(root, {
+      renderer: am5xy.AxisRendererX.new(root, {}),
+      categoryField: X_AXIS_CATEGORY_FIELD,
+    }),
+  );
+  xAxis.data.setAll(chartData.value);
 
-  xAxis.data.setAll(data);
-
-  let series = chart.series.push(
+  series = chart.series.push(
     am5xy.ColumnSeries.new(root, {
-      name: CHART_NAME,
+      name: SERIES_NAME,
       xAxis: xAxis,
       yAxis: yAxis,
-      valueYField: CHART_VALUE_Y_FIELD,
-      categoryXField: CORRECT_CATEGORY,
+      valueYField: SERIES_VALUE_Y_FIELD,
+      categoryXField: SERIES_CATEGORY_X_FIELD,
     }),
   );
+  series.data.setAll(chartData.value);
+  chart.set(CHART_CURSOR_PROPERTY, am5xy.XYCursor.new(root, {}));
+});
 
-  series.data.setAll(data);
-
-  let legend = chart.children.push(am5.Legend.new(root, {}));
-  legend.data.setAll(chart.series.values);
-
-  chart.set(CHART_SET_TYPE, am5xy.XYCursor.new(root, {}));
-};
-
-watch(categoriesWithTotalValue, (newValue) => {
-  if (newValue && Object.keys(newValue).length > 0) {
-    createChart();
+onUnmounted(() => {
+  if (root) {
+    root.dispose();
   }
 });
 
-onBeforeUnmount(() => {
-  if (root) {
-    root.dispose();
-    root = null;
-  }
+watch(chartData, (newChartData) => {
+  series.data.setAll(newChartData);
+  xAxis.data.setAll(newChartData);
 });
 </script>
 

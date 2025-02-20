@@ -1,10 +1,14 @@
 import { useStore } from 'vuex';
 import { BANK_STATEMENT_STORE } from '@/utils/types/store.types.js';
 import ErrorHandler from '@/utils/handlers/ErrorHandler.js';
-import { onMounted } from 'vue';
+import { computed } from 'vue';
 
 export function useBankStatement() {
   const store = useStore();
+
+  const bankStatement = computed(
+    () => store.getters[BANK_STATEMENT_STORE.FULL_STATEMENT],
+  );
 
   const loadBankStatement = async () => {
     try {
@@ -14,9 +18,5 @@ export function useBankStatement() {
     }
   };
 
-  onMounted(() => {
-    loadBankStatement();
-  });
-
-  return { loadBankStatement };
+  return { loadBankStatement, bankStatement };
 }
