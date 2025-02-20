@@ -11,8 +11,14 @@ import BankStatementPieChart from '@/components/bank-statement/charts/BankStatem
 import BankStatementRadarChart from '@/components/bank-statement/charts/BankStatementRadarChart.vue';
 import BankStatementXYDateChart from '@/components/bank-statement/charts/BankStatementXYDateChart.vue';
 import { useBankStatement } from '@/hooks/useBankStatement.js';
+import { onMounted } from 'vue';
 
-useBankStatement();
+const { loadBankStatement, bankStatement } = useBankStatement();
+onMounted(() => {
+  if (!bankStatement.value || bankStatement.value.length === 0) {
+    loadBankStatement();
+  }
+});
 </script>
 
 <style scoped>

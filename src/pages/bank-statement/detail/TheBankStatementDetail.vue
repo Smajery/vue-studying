@@ -9,8 +9,14 @@
 import BankStatementTable from '@/components/bank-statement/detail/BankStatementTable.vue';
 import BankStatementXYChart from '@/components/bank-statement/detail/BankStatementXYChart.vue';
 import { useBankStatement } from '@/hooks/useBankStatement.js';
+import { onMounted } from 'vue';
 
-useBankStatement();
+const { loadBankStatement, bankStatement } = useBankStatement();
+onMounted(() => {
+  if (!bankStatement.value || bankStatement.value.length === 0) {
+    loadBankStatement();
+  }
+});
 </script>
 
 <style scoped>
