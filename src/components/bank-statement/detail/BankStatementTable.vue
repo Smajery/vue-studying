@@ -4,7 +4,7 @@
       class="bank-statement-table"
       @cellValueChanged="onCellValueChanged"
       :rowClassRules="rowClassRules"
-      :rowData="rowData"
+      :rowData="bankStatement"
       :columnDefs="colDefs"
       :singleClickEdit="true"
       :pagination="true"
@@ -41,16 +41,15 @@ const bankStatement = computed(
 const totalAmount = computed(
   () => store.getters[BANK_STATEMENT_STORE.TOTAL_AMOUNT],
 );
-const fixedTotalAmount = computed(() =>
-  totalAmount.value ? Number(totalAmount.value.toFixed(2)) : 0,
-);
+const getFixedTotal = (total) => {
+  return total ? Number(total.toFixed(2)) : 0;
+};
 const pinnedBottomRowData = computed(() => [
   {
     [COL_DEFS_FIELD_NAMES.CATEGORY]: COL_DEFS_FOOTER_NAMES.TOTAL,
-    [COL_DEFS_FIELD_NAMES.AMOUNT]: fixedTotalAmount.value,
+    [COL_DEFS_FIELD_NAMES.AMOUNT]: getFixedTotal(totalAmount.value),
   },
 ]);
-const rowData = computed(() => bankStatement.value);
 
 const onCellValueChanged = (params) => {
   if (params.colDef.field === COL_DEFS_FIELD_NAMES.AMOUNT) {
